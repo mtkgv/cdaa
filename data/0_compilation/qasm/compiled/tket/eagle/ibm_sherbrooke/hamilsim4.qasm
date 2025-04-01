@@ -1,0 +1,42 @@
+OPENQASM 2.0;
+include "qelib1.inc";
+
+gate ecr ecrq0,ecrq1 {
+u3(1.0*pi,1.5*pi,1.0*pi) ecrq0;
+u3(3.5*pi,1.5*pi,0.5*pi) ecrq1;
+cx ecrq0,ecrq1;
+}
+qreg node[70];
+rz(0.5*pi) node[49];
+rz(3.5*pi) node[55];
+rz(3.5*pi) node[68];
+rz(0.5*pi) node[69];
+sx node[49];
+sx node[55];
+sx node[68];
+sx node[69];
+rz(0.25*pi) node[49];
+rz(3.25*pi) node[55];
+rz(3.25*pi) node[68];
+rz(1.75*pi) node[69];
+sx node[49];
+sx node[55];
+sx node[68];
+sx node[69];
+x node[49];
+rz(3.5*pi) node[49];
+ecr node[49],node[55];
+rz(0.5*pi) node[55];
+sx node[55];
+rz(2.5*pi) node[55];
+x node[55];
+rz(3.5*pi) node[55];
+ecr node[55],node[68];
+rz(0.5*pi) node[68];
+sx node[68];
+rz(2.5*pi) node[68];
+x node[68];
+rz(3.5*pi) node[68];
+ecr node[68],node[69];
+rz(0.5*pi) node[69];
+sx node[69];

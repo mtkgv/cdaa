@@ -1,0 +1,8 @@
+# Ignore all files except .gitignore
+#
+# We use this to preserve the (nearly) empty directory
+# structure so it can accept output data from this phase
+# of the experiment.
+
+*
+!.gitignore

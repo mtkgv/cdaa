@@ -1,0 +1,10 @@
+# Ignore any new raw data files generated
+# while reproducing the experiment.
+
+0_compilation/qasm/compiled/**/*.qasm
+0_compilation/qasm/translated/**/*.qasm
+
+1_depth_runtime/data/csv/*.csv
+1_depth_runtime/data/instruction_durations/*.txt
+
+2_analysis/out/*.png
