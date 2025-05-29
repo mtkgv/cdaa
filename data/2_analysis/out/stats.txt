@@ -2,53 +2,67 @@
 ===Runtime Estimator Verification===
 diff := |pulse schedule duration - estimated runtime|
 Exact matches (diff==0): 	30
-Largest diff: 			3.4998046127832083e-16
+Largest diff: 			3.4998046127832083e-16 s
+True runtime @ largest diff: 	0.00183830044444444 s
 
-===Get Minimizing %RE Metrics===
-+++IBM Brisbane+++
-Metric minimizing median relative error:	gate_aware_depth_w=0.09
-Minimum median relative error:			2.145999e-01 %
-+++IBM Kyiv+++
-Metric minimizing median relative error:	gate_aware_depth_w=0.09
-Minimum median relative error:			5.663370e-01 %
-+++IBM Sherbrooke+++
-Metric minimizing median relative error:	gate_aware_depth_w=0.11
-Minimum median relative error:			9.127055e-01 %
-+++IBM Marrakesh+++
-Metric minimizing median relative error:	gate_aware_depth_w=0.53
-Minimum median relative error:			9.958278e-02 %
+===Accuracies in Predicting Relative Runtime Changes===
+Accuracy := | relative change in depth - relative change in runtime | / | relative change in runtime | * 100
 +++IBM Aachen+++
-Metric minimizing median relative error:	gate_aware_depth_w=0.47
-Minimum median relative error:			7.483932e+00 %
+Using traditional depth: 				6.591853e+01 %
+Using multi-qubit depth: 				1.992217e+01 %
+Using gate_aware_depth_w=avg: 				8.554430e+00 %
+Using best metric (gate_aware_depth_w=0.47): 		7.483932e+00 %
++++IBM Brisbane+++
+Using traditional depth: 				3.162971e+01 %
+Using multi-qubit depth: 				7.915611e+00 %
+Using gate_aware_depth_w=avg: 				3.226711e-01 %
+Using best metric (gate_aware_depth_w=0.09): 		2.145999e-01 %
 +++IBM Kingston+++
-Metric minimizing median relative error:	gate_aware_depth_w=0.47
-Minimum median relative error:			2.637770e-02 %
+Using traditional depth: 				4.695698e+01 %
+Using multi-qubit depth: 				1.415736e+01 %
+Using gate_aware_depth_w=avg: 				2.637552e-01 %
+Using best metric (gate_aware_depth_w=0.47): 		2.637770e-02 %
++++IBM Kyiv+++
+Using traditional depth: 				4.290204e+01 %
+Using multi-qubit depth: 				6.965656e+00 %
+Using gate_aware_depth_w=avg: 				1.086765e+00 %
+Using best metric (gate_aware_depth_w=0.09): 		5.663370e-01 %
++++IBM Marrakesh+++
+Using traditional depth: 				4.294978e+01 %
+Using multi-qubit depth: 				1.494908e+01 %
+Using gate_aware_depth_w=avg: 				9.202460e-01 %
+Using best metric (gate_aware_depth_w=0.53): 		9.958278e-02 %
++++IBM Sherbrooke+++
+Using traditional depth: 				2.819944e+01 %
+Using multi-qubit depth: 				8.150806e+00 %
+Using gate_aware_depth_w=avg: 				2.253917e+00 %
+Using best metric (gate_aware_depth_w=0.11): 		9.127055e-01 %
 
 ===Average Gate-Aware Error Reduction===
-Average decrease in median %RE relative to target metric := average of (target metric median %RE / best metric median %RE) over all devices
-Relative to traditional depth:		412.39 x
-Relative to multi-qubit depth:		124.60 x
+Average decrease in median %RE relative to target metric := average of (target metric median %RE / gate-aware median %RE) over all devices
+Relative to traditional depth:		63.74 x
+Relative to multi-qubit depth:		17.80 x
 
 ===Accuracies in Identifying Shortest Circuit Version===
-Accuracy := % of circuits for which depth correctly identied version(s) with shortest true runtime
-+++IBM Brisbane+++
-Using unique gate_aware_depth_w=0.09:		100.0
-Using general gate_aware_depth_w=0.1:		100.0
-+++IBM Kyiv+++
-Using unique gate_aware_depth_w=0.09:		100.0
-Using general gate_aware_depth_w=0.1:		100.0
-+++IBM Sherbrooke+++
-Using unique gate_aware_depth_w=0.11:		100.0
-Using general gate_aware_depth_w=0.1:		100.0
-+++IBM Marrakesh+++
-Using unique gate_aware_depth_w=0.53:		100.0
-Using general gate_aware_depth_w=0.5:		100.0
+Accuracy := % of circuits for which depth correctly identified version(s) with shortest true runtime
 +++IBM Aachen+++
-Using unique gate_aware_depth_w=0.47:		80.0
-Using general gate_aware_depth_w=0.5:		80.0
+Using best metric (gate_aware_depth_w=0.47):		80.0 %
+Using proposed metric (gate_aware_depth_w=avg):		80.0 %
++++IBM Brisbane+++
+Using best metric (gate_aware_depth_w=0.09):		100.0 %
+Using proposed metric (gate_aware_depth_w=avg):		100.0 %
 +++IBM Kingston+++
-Using unique gate_aware_depth_w=0.47:		100.0
-Using general gate_aware_depth_w=0.5:		100.0
+Using best metric (gate_aware_depth_w=0.47):		100.0 %
+Using proposed metric (gate_aware_depth_w=avg):		100.0 %
++++IBM Kyiv+++
+Using best metric (gate_aware_depth_w=0.09):		100.0 %
+Using proposed metric (gate_aware_depth_w=avg):		100.0 %
++++IBM Marrakesh+++
+Using best metric (gate_aware_depth_w=0.53):		100.0 %
+Using proposed metric (gate_aware_depth_w=avg):		100.0 %
++++IBM Sherbrooke+++
+Using best metric (gate_aware_depth_w=0.11):		100.0 %
+Using proposed metric (gate_aware_depth_w=avg):		100.0 %
 
 ===Average Gate-Aware Accuracy Increase===
 Average increase in percentage points (pp) of accuracy across devices

@@ -1,8 +1,6 @@
 # Circuit Depth Accuracy (Artifact)
-<!-- TODO: Add bibliography information -->
 This repository hosts data and source code for experiments in the paper *Is Circuit Depth Accurate for Comparing Quantum Circuit Runtimes?.*[^1]
 
-<!--% TODO: Where should this acknowledgement go? -->
 The experimental code for the single-qubit gates matter (SQGM) algorithm[^2] was adapted from the [original SQGM repository](https://github.com/ebony72/sqgm) to work with a newer version of NumPy.
 
 
@@ -61,7 +59,8 @@ More specifically, the output directories' contents consist of:
 - `2_analysis/imgs/`
     - `out`: Figure image files created from the CSV data
 
-The fourth directory, `data`, contains a copy of this directory structure populated with the data obtained during the paper experiment. This data may be copied to the experimental workspace to reproduce the paper's results. For example, to reproduce the figures one would copy the CSV files in `data/1_depth_runtime/data/csv/` to `1_depth_runtime/data/csv/` and then run the final experimental phase in `2_analysis`.
+- `data`: A copy of the preceding directory structure, populated with data and results obtained during the experiment. This data may be may be copied to the experimental workspace to reproduce the paper's results.
+    - *Example*: To reproduce the figures, copy the CSV files in `data/1_depth_runtime/data/csv/` to `1_depth_runtime/data/csv/` and then run the final experimental phase in `2_analysis`.
 
 
 ## Running the Experiment
@@ -92,17 +91,17 @@ Experimental phases may be run in sequence or individually, as long as the expec
 
 1. Next, navigate to `1_depth_runtime`
 
-2. Obtain the depths and runtimes of the compiled circuits on their target devices by running `python data.py`
+2. Obtain the depths and runtimes of the compiled circuits on their target devices by running `python data.py`. Note that the script is set up to run in local mode, which averts the need for Qiskit API access but requires copying the saved InstructionDurations text files in `1_depth_runtime/data/instruction_durations`.
 
-3. (Optional) Obtain the estimated runtime and Qiskit pulse schedule duration for circuits compiled for the IBM Sherbrooke by running `python verify.py`
+3. Obtain the estimated runtime and Qiskit pulse schedule duration for circuits compiled for the IBM Sherbrooke by running `python verify.py`
 
 ### C. Analysis
 
 1. Finally, navigate to `2_analysis`
 
-2. Plot the figures from the results section by running `python figs.py`
+2. Plot the figures from the results section by running `python runfigs.py`
 
-3. Create the (textual) numerical analysis of depth metrics by running `python stats.py`
+3. Create the (textual) numerical analysis of depth metrics by running `python runstats.py`
 
 
 ## License
@@ -111,7 +110,7 @@ Apache License 2.0
 
 
 ## References
-<!-- TODO: Add arXiv preprint link -->
+
 [^1]: M. Tremba, J. Liu, and P. Hovland, "Is circuit depth accurate for comparing quantum circuit runtimes?," *arXiv preprint: [arXiv:2505.16908](https://doi.org/10.48550/arXiv.2505.16908)*, 2025.
 
 [^2]: S. Li, K. D. Nguyen, Z. Clare and Y. Feng, "Single-qubit gates matter for optimising quantum circuit depth in qubit mapping," *2023 IEEE/ACM International Conference on Computer Aided Design (ICCAD), San Francisco, CA, USA*, 2023, pp. 1-9, doi: [10.1109/ICCAD57390.2023.10323863](https://doi.org/10.1109/ICCAD57390.2023.10323863).

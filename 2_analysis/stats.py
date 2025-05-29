@@ -1,18 +1,14 @@
+"""
+Provides data-analyzing functions for the stat script.
+"""
+
 import numpy as np
-import logging
 
 from utils import csv_to_array
-from utils import csvs_to_data_dict
 from utils import get_RE_quantiles
 from utils import get_min_RE_metrics
 from utils import get_identify_shortest_accuracies
 from utils import identify_shortest
-
-
-"""
-Prints statistics and/or numerical evidence for claims made in the text
-of the results section.
-"""
 
 
 def verify_runtime_estimator(verify_csv_path):
@@ -23,23 +19,28 @@ def verify_runtime_estimator(verify_csv_path):
     """
 
     eagle_compilers = ["sabre0330", "sqgm", "qiskit141"]
-    metrics = ["estimated_runtime", "qiskit_scheduler_runtime",]
+    metrics = [
+        "estimated_runtime",
+        "qiskit_scheduler_runtime",
+    ]
     first_col = 1
 
     data = csv_to_array(
-        csv_path = verify_csv_path,
-        n_circuits = 15,
-        n_compilers = len(eagle_compilers),
-        n_metrics = len(metrics),
-        first_col = first_col,
+        csv_path=verify_csv_path,
+        n_circuits=15,
+        n_compilers=len(eagle_compilers),
+        n_metrics=len(metrics),
+        first_col=first_col,
     )
-    
+
     # For each circuit and compiler version, get the difference
     # |pulse schedule duration - estimated runtime|
     diffs = np.zeros((data.shape[0], data.shape[1]))
     for circuit_pos in range(data.shape[0]):
         for compiler_pos in range(data.shape[1]):
-            diff = data[circuit_pos][compiler_pos][1] - data[circuit_pos][compiler_pos][0]
+            diff = (
+                data[circuit_pos][compiler_pos][1] - data[circuit_pos][compiler_pos][0]
+            )
             diffs[circuit_pos][compiler_pos] = abs(diff)
 
     exact_matches = 0
@@ -49,54 +50,62 @@ def verify_runtime_estimator(verify_csv_path):
             exact_matches += 1
         if diff > max_diff:
             max_diff = diff
-    
+
+    # Retrieve true runtime of circuit producing max diff
+    pair_position = np.where(diffs == max_diff)
+
+    # First two coordinates specify the circuit and compiler, last=1 specifies
+    # true runtime instead of estimate
+    runtime_at_max_diff = data[pair_position[0][0]][pair_position[1][0]][1]
+
     print("\n===Runtime Estimator Verification===")
     print("diff := |pulse schedule duration - estimated runtime|")
     print(f"Exact matches (diff==0): \t{exact_matches}")
-    print(f"Largest diff: \t\t\t{max_diff}")
+    print(f"Largest diff: \t\t\t{max_diff} s")
+    print(f"True runtime @ largest diff: \t{runtime_at_max_diff} s")
 
 
 def calc_avg_RE_multiplier(datas, metrics):
     """
-    Calculates the average number of times smaller the best metric's median percent
+    Calculates the average number of times smaller the gate-aware median percent
     relative error (%RE) is compared to traditional and multi-qubit depths' median %RE,
     or in equation form:
 
-        1 / num_devices * sum_{devices}( target metric median %RE / best metric median %RE )
+        1 / num_devices * sum_{devices}( target metric median %RE / gate-aware median %RE )
 
     Args:
         datas (dict[str: np.array]): Mapping from device names to device raw data.
-        
+
         metrics (list[str]): The names of the metrics to associate with the data values.
     """
 
-    best_metrics = get_min_RE_metrics(datas, metrics)
-
     trad_multiplier_sum = 0
     multi_multiplier_sum = 0
-    num_devices = 0 
+    num_devices = 0
 
-    for device_name, device_data in datas.items():
+    for device_data in datas.values():
         quantiles = get_RE_quantiles(device_data)
-        best_metric = best_metrics[device_name]
 
-        # Add len(metric)-1 offset because absolute errors are stored in the first half. 
+        # Add len(metric)-1 offset because absolute errors are stored in the first half.
         # See get_RE_quantiles for more information.
-        best_metric_index = (len(metrics)-1) + metrics.index(best_metric)
-        best_metric_median_RE = quantiles[best_metric_index][1]
+        gate_aware_index = (len(metrics) - 1) + metrics.index("gate_aware_depth_w=avg")
+        gate_aware_median_RE = quantiles[gate_aware_index][2]
 
         # Multi q2 %RE stored in first row of second half, trad in last row of second half
-        multi_multiplier = quantiles[len(metrics)-1][1] / best_metric_median_RE
-        trad_multiplier = quantiles[-1][1] / best_metric_median_RE
+        multi_multiplier = quantiles[len(metrics) - 1][2] / gate_aware_median_RE
+        trad_multiplier = quantiles[-1][2] / gate_aware_median_RE
 
         trad_multiplier_sum += trad_multiplier
         multi_multiplier_sum += multi_multiplier
         num_devices += 1
-    
+
     trad_avg_multiplier = trad_multiplier_sum / num_devices
     multi_avg_multiplier = multi_multiplier_sum / num_devices
     print("\n===Average Gate-Aware Error Reduction===")
-    print("Average decrease in median %RE relative to target metric := average of (target metric median %RE / best metric median %RE) over all devices")
+    print(
+        "Average decrease in median %RE relative to target metric := "
+        + "average of (target metric median %RE / gate-aware median %RE) over all devices"
+    )
     print(f"Relative to traditional depth:\t\t{trad_avg_multiplier:.2f} x")
     print(f"Relative to multi-qubit depth:\t\t{multi_avg_multiplier:.2f} x")
 
@@ -104,59 +113,79 @@ def calc_avg_RE_multiplier(datas, metrics):
 def compare_identify_shortest_accuracies(datas, metrics):
     """
     Compares gate-aware depth's accuracy at identifying the circuit version(s) with shortest
-    estimated runtime using device-specific and generalized architecture weights.
+    estimated runtime using device-specific and average architecture weights.
 
     Args:
         datas (dict[str: np.array]): Mapping from device names to device raw data.
-        
+
         metrics (list[str]): The names of the metrics to associate with the data values.
     """
 
     unique_metrics = get_min_RE_metrics(datas, metrics)
 
-    general_metrics = {
-        "IBM Sherbrooke": "gate_aware_depth_w=0.1",
-        "IBM Kyiv": "gate_aware_depth_w=0.1",
-        "IBM Brisbane": "gate_aware_depth_w=0.1",
-        "IBM Marrakesh": "gate_aware_depth_w=0.5",
-        "IBM Kingston": "gate_aware_depth_w=0.5",
-        "IBM Aachen": "gate_aware_depth_w=0.5",
+    shared_metrics = {
+        "IBM Sherbrooke": "gate_aware_depth_w=avg",
+        "IBM Kyiv": "gate_aware_depth_w=avg",
+        "IBM Brisbane": "gate_aware_depth_w=avg",
+        "IBM Marrakesh": "gate_aware_depth_w=avg",
+        "IBM Kingston": "gate_aware_depth_w=avg",
+        "IBM Aachen": "gate_aware_depth_w=avg",
     }
 
     unique_accuracies = get_identify_shortest_accuracies(datas, metrics, unique_metrics)
-    general_accuracies = get_identify_shortest_accuracies(datas, metrics, general_metrics)
+    shared_accuracies = get_identify_shortest_accuracies(datas, metrics, shared_metrics)
 
     print("\n===Accuracies in Identifying Shortest Circuit Version===")
-    print("Accuracy := % of circuits for which depth correctly identied version(s) with shortest true runtime")
+    print(
+        "Accuracy := % of circuits for which depth correctly identified "
+        + "version(s) with shortest true runtime"
+    )
     for device_name in datas.keys():
-        print(f"+++{device_name}+++")  
-        print(f"Using unique {unique_metrics[device_name]}:\t\t{unique_accuracies[device_name][-1]}")
-        print(f"Using general {general_metrics[device_name]}:\t\t{general_accuracies[device_name][-1]}")
+        print(f"+++{device_name}+++")
+        print(
+            f"Using best metric ({unique_metrics[device_name]}):"
+            + f"\t\t{unique_accuracies[device_name][-1]} %"
+        )
+        print(
+            f"Using proposed metric ({shared_metrics[device_name]}):"
+            + f"\t\t{shared_accuracies[device_name][-1]} %"
+        )
 
 
 def calc_avg_accuracy_increase(datas, metrics):
     """
-    Calculates the average percentage point (pp) increase in the best metric's accuracy 
+    Calculates the average percentage point (pp) increase in the gate-aware depth's accuracy
     at identifying the circuit versions with shortest estimated runtime.
 
     Args:
         datas (dict[str: np.array]): Mapping from device names to device raw data.
-        
+
         metrics (list[str]): The names of the metrics to associate with the data values.
     """
 
-    best_metrics = get_min_RE_metrics(datas, metrics)
+    shared_metrics = {
+        "IBM Sherbrooke": "gate_aware_depth_w=avg",
+        "IBM Kyiv": "gate_aware_depth_w=avg",
+        "IBM Brisbane": "gate_aware_depth_w=avg",
+        "IBM Marrakesh": "gate_aware_depth_w=avg",
+        "IBM Kingston": "gate_aware_depth_w=avg",
+        "IBM Aachen": "gate_aware_depth_w=avg",
+    }
 
-    device_accuracies = get_identify_shortest_accuracies(datas, metrics, best_metrics)
+    device_accuracies = get_identify_shortest_accuracies(datas, metrics, shared_metrics)
 
     trad_change_sum = 0
     multi_change_sum = 0
-    num_devices = 0 
+    num_devices = 0
 
-    for device_name, device_data in datas.items():
-        # Best metric accuracy stored in last column, trad accuracy in 0th col, and multi in 1st col.
-        trad_change_sum += device_accuracies[device_name][-1] - device_accuracies[device_name][0]
-        multi_change_sum += device_accuracies[device_name][-1] - device_accuracies[device_name][1]
+    for device_name in datas.keys():
+        # Gate-aware accuracy stored in last column, trad accuracy in 0th col, and multi in 1st col.
+        trad_change_sum += (
+            device_accuracies[device_name][-1] - device_accuracies[device_name][0]
+        )
+        multi_change_sum += (
+            device_accuracies[device_name][-1] - device_accuracies[device_name][1]
+        )
         num_devices += 1
 
     trad_change_avg = trad_change_sum / num_devices
@@ -174,63 +203,12 @@ def show_multi_ties(data, metrics):
     had the shortest multi-qubit depth, but other versions also tied this depth. In other words,
     this is the number of comparisons where the wrong decision was made due to differences in
     single-qubit gates.
-    
+
     Args:
         datas (dict[str: np.array]): Mapping from device names to device raw data.
-        
+
         metrics (list[str]): The names of the metrics to associate with the data values.
     """
 
     print("\n===Marrakesh Multi-Qubit Accuracy Analysis===")
     identify_shortest(data, metrics, term_out=True)
-
-
-# Configuration
-num_circuits = 15
-
-eagle_compilers = ["sabre0330", "sqgm", "qiskit141"]
-heron_compilers = ["sabre0330", "sqgm", "tket", "qiskit141"]
-num_eagle_compilers = len(eagle_compilers)
-num_heron_compilers = len(heron_compilers)
-n_device_compilers = {
-    "ibm_sherbrooke": num_eagle_compilers,
-    "ibm_kyiv": num_eagle_compilers,
-    "ibm_brisbane": num_eagle_compilers,
-    "ibm_marrakesh": num_heron_compilers,
-    "ibm_kingston": num_heron_compilers,
-    "ibm_aachen": num_heron_compilers,
-}
-
-weights = [x/100.0 for x in range(1,101)]
-metrics = ["multi_qubit_depth",] 
-for weight in weights:
-    metrics.append(f"gate_aware_depth_w={weight}")
-metrics += ["trad_depth", "runtime" ]
-num_metrics = len(metrics)
-
-first_col = 1
-
-datas = csvs_to_data_dict(
-    csv_directory = r"../1_depth_runtime/data/csv/",
-    exclude = ["verify.csv",],
-    n_circuits = num_circuits,
-    n_device_compilers = n_device_compilers,
-    n_metrics = num_metrics,
-    first_col = first_col,
-)
-
-
-# Analysis Script
-
-# In the original data, there was one circuit comparison which raised a
-# divide-by-zero warning when running identify_shortest. This causes a single
-# data point to be lost, which affects results only minimally but interrupts
-# the analysis print outs. We set the logging level to avoid this.
-logging.basicConfig(level=logging.ERROR)
-
-verify_runtime_estimator(r"../1_depth_runtime/data/csv/verify.csv")
-get_min_RE_metrics(datas, metrics, term_out=True)
-calc_avg_RE_multiplier(datas, metrics)
-compare_identify_shortest_accuracies(datas, metrics)
-calc_avg_accuracy_increase(datas, metrics)
-show_multi_ties(datas["IBM Marrakesh"], metrics)

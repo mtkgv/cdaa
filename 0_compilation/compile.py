@@ -1,16 +1,15 @@
-import sys
-from importlib_metadata import version
-import warnings
-import subprocess
-import os
-import shutil
-
-
 """
 Compile and optimize the original test suite circuits using SQGM and SABRE in the old
 environment and TKET and Qiskit in the new environment. Automatically detects which
 environment it has been run in using the installed Python packages.
 """
+
+import sys
+import subprocess
+import os
+import shutil
+
+from importlib_metadata import version
 
 
 if __name__ == "__main__":
@@ -29,28 +28,50 @@ if __name__ == "__main__":
             sys.exit(1)
         else:
             comp_env = "old"
-            print(f"Found qiskit-terra {ver_num}, entering 'old' compilation environment.")
+            print(
+                f"Found qiskit-terra {ver_num}, entering 'old' compilation environment."
+            )
     else:
         comp_env = "new"
         print(f"Found qiskit {ver_num}, entering 'new' compilation environment.")
 
     if comp_env == "old":
-        
+
         # Configuration
         hardware = {
-            "eagle": ["ibm_sherbrooke", "ibm_kyiv", "ibm_brisbane",],
-            "heron": ["ibm_marrakesh", "ibm_kingston", "ibm_aachen",],
+            "eagle": [
+                "ibm_sherbrooke",
+                "ibm_kyiv",
+                "ibm_brisbane",
+            ],
+            "heron": [
+                "ibm_marrakesh",
+                "ibm_kingston",
+                "ibm_aachen",
+            ],
         }
-        compilers = ["sqgm", "sabre0330",]
+        compilers = [
+            "sqgm",
+            "sabre0330",
+        ]
 
         for architecture, devices in hardware.items():
             print(f"+++{architecture}+++")
-            print(f"Starting sqgm artifact script with configuration 'sqgm/exp-in/exp_{architecture}.json'.")
+            print(
+                "Starting sqgm artifact script with configuration "
+                + f"'sqgm/exp-in/exp_{architecture}.json'."
+            )
 
             # Ue pre-existing sqgm script to compile with (older) sqgm and sabre0330 algorithms
             # Ignore warnings because Qiskit Terra raises many deprecation errors
             proc = subprocess.Popen(
-                ("python", "-W", "ignore", "sqgm/main.py", f"sqgm/exp-in/exp_{architecture}.json")
+                (
+                    "python",
+                    "-W",
+                    "ignore",
+                    "sqgm/main.py",
+                    f"sqgm/exp-in/exp_{architecture}.json",
+                )
             )
             proc.wait()
 
@@ -58,9 +79,9 @@ if __name__ == "__main__":
 
             # Copy compiled .qasm files to matching compiler, architecture, and device directory
             #
-            # sqgm script exports .qasm files to one target directory. Sorting from this target directory
-            # to the matching /compiler/architecture/device directory allows us to maintain consistent file
-            # organization to simplify the next phase in the methodology.
+            # sqgm script exports .qasm files to one target directory. Sorting from this target
+            # directory to the matching /compiler/architecture/device directory allows us to
+            # maintain consistent file organization to simplify the next phase in the methodology.
             for file_name in os.listdir(comp_dir):
                 if file_name.endswith(".qasm"):
                     full_file_path = os.path.join(comp_dir, file_name)
@@ -69,7 +90,7 @@ if __name__ == "__main__":
                     if "init" in file_name or "min-in" in file_name:
                         os.remove(full_file_path)
                         continue
-                    
+
                     # Copy and rename compiled .qasms to correct directory
                     for compiler in compilers:
                         if compiler in file_name:
@@ -86,7 +107,7 @@ if __name__ == "__main__":
         sys.exit(0)
 
     elif comp_env == "new":
-        
+
         from util import comp_qiskit
         from util import comp_tket
 
@@ -96,8 +117,16 @@ if __name__ == "__main__":
             "tket": comp_tket,
         }
         hardware = {
-            "eagle": ["ibm_sherbrooke", "ibm_kyiv", "ibm_brisbane",],
-            "heron": ["ibm_marrakesh", "ibm_kingston", "ibm_aachen",],
+            "eagle": [
+                "ibm_sherbrooke",
+                "ibm_kyiv",
+                "ibm_brisbane",
+            ],
+            "heron": [
+                "ibm_marrakesh",
+                "ibm_kingston",
+                "ibm_aachen",
+            ],
         }
         num_reps = 5
 
@@ -114,19 +143,17 @@ if __name__ == "__main__":
                     print(f"---{device_name}---")
 
                     in_qasm_dir = r"./qasm/original/"
-                    out_qasm_dir = rf"./qasm/compiled/{compiler}/{architecture}/{device_name}/"
-                    
+                    out_qasm_dir = (
+                        rf"./qasm/compiled/{compiler}/{architecture}/{device_name}/"
+                    )
+
                     compile_func(
-                        architecture,
-                        device_name,
-                        num_reps,
-                        in_qasm_dir,
-                        out_qasm_dir
+                        architecture, device_name, num_reps, in_qasm_dir, out_qasm_dir
                     )
 
         sys.exit(0)
-    
+
     # If comp_env is neither "old" or "new", abort
     else:
         print("Compilation environment could not be established, aborting.")
-        sys.exit(1)    
+        sys.exit(1)

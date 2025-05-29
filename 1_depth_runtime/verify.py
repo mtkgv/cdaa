@@ -1,24 +1,32 @@
-import os
-
-from drtester import DRTester
-
-
 """
-Obtain the estimated runtime and Qiskit pulse schedule duration for
+Obtains the estimated runtime and Qiskit pulse schedule duration for
 circuits compiled for the IBM Sherbrooke.
 """
 
+import os
+
+from utils import DRTester
+
 
 # Configuration
-compilers = ["sabre0330", "sqgm", "qiskit141",]
+compilers = [
+    "sabre0330",
+    "sqgm",
+    "qiskit141",
+]
 hardware = {
-    "eagle": ["ibm_sherbrooke",],
+    "eagle": [
+        "ibm_sherbrooke",
+    ],
 }
-metrics = ["estimated_runtime", "qiskit_scheduler_runtime",]
+metrics = [
+    "estimated_runtime",
+    "qiskit_scheduler_runtime",
+]
 parent_qasm_dir = r"../0_compilation/qasm/translated/"
 
 inst_dur_out_path = r"./data/instruction_durations/"
-csv_out_path = rf"./data/csv/verify.csv"
+csv_out_path = r"./data/csv/verify.csv"
 
 
 # Experiment Script
@@ -27,9 +35,10 @@ for architecture, device_names in hardware.items():
 
     for device_name in device_names:
         print(f"---{device_name}---")
-        
+
         tester = DRTester(
             device_name=device_name,
+            weight_map={},
             compilers=compilers,
             metrics=metrics,
         )
@@ -42,7 +51,9 @@ for architecture, device_names in hardware.items():
         for compiler in compilers:
             print(f"==={compiler}===")
 
-            qasm_dir = os.path.join(parent_qasm_dir, rf"{compiler}/{architecture}/{device_name}/")
+            qasm_dir = os.path.join(
+                parent_qasm_dir, rf"{compiler}/{architecture}/{device_name}/"
+            )
             tester.get_data(qasm_dir)
 
         tester.record(csv_out_path)
