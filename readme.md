@@ -3,6 +3,8 @@ This repository hosts data and source code for experiments in the paper *Is Circ
 
 The experimental code for the single-qubit gates matter (SQGM) algorithm[^2] was adapted from the [original SQGM repository](https://github.com/ebony72/sqgm) to work with a newer version of NumPy.
 
+For those wishing to estimate quantum circuit runtimes, the estimator has been extracted to [its own repository](https://github.com/mtkgv/qcre) as a standalone tool.
+
 
 ## Installation
 
